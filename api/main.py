@@ -5,16 +5,16 @@ from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, AudioMessage, TextSendMessage
 from supabase import create_client
 
-# ประกาศ app ไว้ระดับนอกสุดเพื่อให้ Vercel ตรวจพบ
+# 1. ต้องอยู่ระดับนอกสุด (Global) เท่านั้น
 app = Flask(__name__)
 
-# ตั้งค่า API Keys (ดึงจาก Vercel Environment Variables)
+# 2. โหลด Config จาก Vercel Settings
 line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'))
 handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 supabase = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
 
 @app.route("/")
-def index():
+def home():
     return "Secretary AI Online"
 
 @app.route("/callback", methods=['POST'])
@@ -37,7 +37,7 @@ def handle_text(event):
 
 @handler.add(MessageEvent, message=AudioMessage)
 def handle_audio(event):
-    # จดงานลงคิวใน Supabase
+    # จดงานลง Supabase
     supabase.table("audio_tasks").insert({
         "audio_id": str(event.message.id),
         "user_id": str(event.source.user_id),
