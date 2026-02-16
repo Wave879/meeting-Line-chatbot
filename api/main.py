@@ -5,17 +5,17 @@ from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, AudioMessage, TextSendMessage
 from supabase import create_client
 
-# ประกาศ app ไว้ที่นี่ ห้ามใส่ไว้ใน if __name__ == "__main__"
+# ประกาศ app ไว้ระดับนอกสุดเพื่อให้ Vercel ตรวจพบ
 app = Flask(__name__)
 
-# ดึงค่าจาก Environment Variables
+# ตั้งค่า API Keys (ดึงจาก Vercel Environment Variables)
 line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'))
 handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 supabase = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
 
 @app.route("/")
-def home():
-    return "Secretary AI is Online"
+def index():
+    return "Secretary AI Online"
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -32,12 +32,12 @@ def handle_text(event):
     if event.message.text == "คุณเลขา":
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="บอท AI พร้อมสรุปประชุมแล้วค่ะ ท่านสามารถส่งไฟล์เสียงมาได้เลย")
+            TextSendMessage(text="บอท AI พร้อมสรุปประชุมแล้วค่ะ ส่งไฟล์เสียงมาได้เลย")
         )
 
 @handler.add(MessageEvent, message=AudioMessage)
 def handle_audio(event):
-    # บันทึกงานลง Supabase
+    # จดงานลงคิวใน Supabase
     supabase.table("audio_tasks").insert({
         "audio_id": str(event.message.id),
         "user_id": str(event.source.user_id),
@@ -46,5 +46,5 @@ def handle_audio(event):
     
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text="⏳ ได้รับไฟล์เสียงแล้วค่ะ กำลังส่งให้เครื่อง Server ประมวลผลสรุปให้นะคะ")
+        TextSendMessage(text="⏳ ได้รับไฟล์เสียงแล้วค่ะ กำลังประมวลผลสรุปให้นะคะ")
     )
