@@ -5,7 +5,7 @@ from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, AudioMessage, TextSendMessage
 from supabase import create_client
 
-# 1. ประกาศไว้ระดับนอกสุดเพื่อให้ Vercel ตรวจพบ
+# 1. ประกาศไว้ระดับนอกสุดเพื่อให้ Vercel Runtime หาเจอ
 app = Flask(__name__)
 
 # 2. ตั้งค่า API Keys (ดึงจาก Vercel Environment Variables)
@@ -32,7 +32,7 @@ def handle_text(event):
     if event.message.text == "คุณเลขา":
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="บอท AI พร้อมสรุปประชุมแล้วค่ะ ส่งไฟล์เสียงมาได้เลย")
+            TextSendMessage(text="บอท AI พร้อมสรุปประชุมแล้วค่ะ ท่านสามารถส่งไฟล์เสียงมาได้เลย")
         )
 
 @handler.add(MessageEvent, message=AudioMessage)
@@ -46,5 +46,5 @@ def handle_audio(event):
     
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text="⏳ ได้รับไฟล์เสียงแล้วค่ะ กำลังประมวลผลสรุปให้นะคะ")
+        TextSendMessage(text="⏳ ได้รับไฟล์เสียงแล้วค่ะ กำลังส่งให้เครื่อง Server ประมวลผลให้นะคะ")
     )
