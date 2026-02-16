@@ -1,30 +1,45 @@
-import os, requests
+import os
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, AudioMessage, TextSendMessage
+from linebot.models import MessageEvent, TextMessage, AudioMessage, TextSendMessage
+from supabase import create_client
 
-# ประกาศ app ไว้ด้านบนสุดและห้ามมีตัวแปรชื่อ app อื่นๆ ในไฟล์
-app = Flask(__name__) 
+app = Flask(__name__)
 
-# ย้ายการดึงค่า Config ไว้ในตัวแปรที่ชื่อชัดเจน
-LINE_API = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'))
-LINE_HANDLER = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
-D_KEY = os.getenv('DIFY_API_KEY')
-D_URL = os.getenv('DIFY_BASE_URL', 'http://bt-dify.demotoday.net/v1')
+# ดึงค่าจาก Environment Variables
+line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'))
+handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
+supabase = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
 
-@app.route("/webhook", methods=['POST'])
+@app.route("/callback", methods=['POST'])
 def callback():
-    signature = request.headers.get('X-Line-Signature')
+    signature = request.headers['X-Line-Signature']
     body = request.get_data(as_text=True)
     try:
-        LINE_HANDLER.handle(body, signature)
+        handler.handle(body, signature)
     except InvalidSignatureError:
         abort(400)
     return 'OK'
 
-# ... ส่วน handle_audio ให้ใช้ LINE_API และ LINE_HANDLER ตามชื่อใหม่ ...
+@handler.add(MessageEvent, message=TextMessage)
+def handle_text(event):
+    if event.message.text == "คุณเลขา":
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="บอท AI พร้อมสรุปประชุมแล้วค่ะ")
+        )
 
-# สำคัญ: ห้ามมี app.run() อยู่นอก if __name__ == "__main__": เด็ดขาด
-if __name__ == "__main__":
-    app.run()
+@handler.add(MessageEvent, message=AudioMessage)
+def handle_audio(event):
+    # บันทึกงานลงตาราง audio_tasks
+    supabase.table("audio_tasks").insert({
+        "audio_id": event.message.id,
+        "user_id": event.source.user_id,
+        "status": "pending"
+    }).execute()
+    
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text="⏳ ได้รับไฟล์เสียงแล้วค่ะ เครื่อง Server กำลังประมวลผลสรุปให้ กรุณารอสักครู่นะคะ")
+    )
